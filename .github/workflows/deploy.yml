@@ -1,0 +1,52 @@
+name: Deploy Laravel via FTP
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Baixa o código do repositório
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Instala o PHP e Composer
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+
+    # Instala dependências do Laravel
+    - name: Install Composer dependencies
+      run: composer install --no-dev --optimize-autoloader
+
+    # (Opcional) Build do Vite — só se você usa Vite!
+    - name: Install NPM dependencies
+      run: npm install
+      continue-on-error: true
+
+    - name: Build assets
+      run: npm run build
+      continue-on-error: true
+
+    # Envia os arquivos para o servidor
+    - name: Deploy files via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: ${{ secrets.FTP_HOST }}
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: "./"
+        server-dir: "/public_html/"
+        exclude: |
+          **/.git*
+          **/.github*
+          **/node_modules/*
+          **/tests/*
+          storage/logs/*
+          storage/framework/sessions/*
+          storage/framework/views/*
