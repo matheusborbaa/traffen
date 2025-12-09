@@ -1,52 +1,42 @@
-name: Deploy Laravel via FTP
+name: Deploy via FTP (sem build)
 
 on:
   push:
     branches:
-      - main
+      - main      # ou a branch que você usa
+  workflow_dispatch: # permite rodar manualmente pelo botão "Run workflow"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # Baixa o código do repositório
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # 1) Baixa o código do repositório
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Instala o PHP e Composer
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.2'
+      # 2) Envia os arquivos para o servidor via FTP
+      - name: Deploy files via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
 
-    # Instala dependências do Laravel
-    - name: Install Composer dependencies
-      run: composer install --no-dev --optimize-autoloader
+          # Pasta local do projeto
+          # se o Laravel estiver numa subpasta (ex: ./traffen), troque aqui
+          local-dir: "./"
 
-    # (Opcional) Build do Vite — só se você usa Vite!
-    - name: Install NPM dependencies
-      run: npm install
-      continue-on-error: true
+          # Pasta no servidor (ajuste conforme seu cPanel)
+          # ex: "/public_html/", "/public_html/laravel/", etc.
+          server-dir: "/public_html/"
 
-    - name: Build assets
-      run: npm run build
-      continue-on-error: true
-
-    # Envia os arquivos para o servidor
-    - name: Deploy files via FTP
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-      with:
-        server: ${{ secrets.FTP_HOST }}
-        username: ${{ secrets.FTP_USER }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        local-dir: "./"
-        server-dir: "/public_html/"
-        exclude: |
-          **/.git*
-          **/.github*
-          **/node_modules/*
-          **/tests/*
-          storage/logs/*
-          storage/framework/sessions/*
-          storage/framework/views/*
+          # O que NÃO enviar
+          exclude: |
+            **/.git*
+            **/.github*
+            **/node_modules/*
+            **/tests/*
+            storage/logs/*
+            storage/framework/sessions/*
+            storage/framework/views/*
